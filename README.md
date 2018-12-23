@@ -12,9 +12,9 @@ The purpose of this maker hour was give Hirshhorn visitors deeper insight so tha
 
 ## EXERCISE 1 - POLYRHYTHMS 
 ###
-Each visitor's heartbeat was detected by the pulse sensor and loaded into a MIDI scroll of its own Ableton instrument. Every new heartbeat had a different tone, following a predetermined scale. Once multiple heartbeats were added, a polyrhythmic pattern formed with a mood based on the chosen scale. 
-![Hirshhorn Hemmer-O-Graph Takeaway Examples]image(https://raw.githubusercontent.com/ianmcdermott/euclidean-pulses/master/images/polyAbleton.png)
-
+Each visitor's heartbeat was detected by the pulse sensor and loaded into a MIDI scroll of its own Ableton instrument. Every new heartbeat had a different tone, following a predetermined scale. Once multiple heartbeats were added, a polyrhythmic pattern formed with a mood based on the chosen scale.</br>
+![Hirshhorn Hemmer-O-Graph Takeaway Examples](https://raw.githubusercontent.com/ianmcdermott/euclidean-pulses/master/images/polyAbleton.png)
+2
 ## EXERCISE 2 - EUCLIDEAN RHYTHMS 
 Every participant takes their pulse with a pulse sensor. Their BPM is processed through a euclidean algorithm, which calculates the optimal spacing between each beat within a timeframe. Every beat is then added to a box within a row in a midi timeline. Each row represents a different drum, with the green squares playing a sound clip of the drum when the vertical white bar passes over. 
 ![Hirshhorn Hemmer-O-Graph Takeaway Examples](https://raw.githubusercontent.com/ianmcdermott/euclidean-pulses/master/images/euclideanMidi.png)
