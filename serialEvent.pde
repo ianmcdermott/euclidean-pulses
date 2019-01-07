@@ -1,5 +1,3 @@
-
-
 void serialEvent(Serial port){
 try{
    String inData = port.readStringUntil('\n');
@@ -7,12 +5,11 @@ try{
 
   if (inData.charAt(0) == 'S'){           // leading 'S' means Pulse Sensor data packet
      inData = inData.substring(1);        // cut off the leading 'S'
-     Sensor = int(inData);  
-     heartbeat = int(inData);// convert the string to usable int
+     Sensor = int(inData);                // convert the string to usable int
    }
    if (inData.charAt(0) == 'B'){          // leading 'B' for BPM data
      inData = inData.substring(1);        // cut off the leading 'B'
-     BPM = int(inData);   // convert the string to usable int
+     BPM = int(inData);                   // convert the string to usable int
      beat = true;                         // set beat flag to advance heart rate graph
      heart = 20;                          // begin heart image 'swell' timer
    }
