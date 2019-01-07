@@ -32,17 +32,21 @@ class BeatSeq {
       return a;
     }
   }
-  
-  void euclideanDistribution(){
+
+  void euclideanDistribution() {
+    //clear boxes previous state
+    for (int i = 0; i < box.length; i++) {
+        box[i].activated = false;
+      }
     int myGCD = gcd(numbeats, BPM);
     int count = 0;
-     for (int i = 0; i < box.length; i++) {
-       if(count == 0){
-          box[i].activated = true; 
-       }
-       count++;
-       if(count > myGCD) count = 0;
-     }
+    for (int i = 0; i < box.length; i++) {
+      if (count == 0) {
+        box[i].activated = true;
+      }
+      count++;
+      if (count > myGCD) count = 0;
+    }
   }
 
   void update() {
@@ -68,6 +72,13 @@ class BeatSeq {
       } else {
         box[i].playing = false;
       }
+      box[i].update();
+    }
+  }
+
+  void clear() {
+    for (Box b : box) {
+      b.played = false;
     }
   }
 }

@@ -2,6 +2,7 @@
 //optimize boids for regional crowfollow
 //optimize boids to only detect a chunk of the array list of points
 import processing.serial.*;  // serial library lets us talk to Arduino
+import rwmidi.*;  
 
 //Sprite
 PImage[] wingImages;
@@ -16,6 +17,7 @@ float angleRes = .0007;
 BeatSeq[] beatsequences = new BeatSeq[8];
 
 boolean beat1 = true;
+int tonic = 50;
 
 float osc1 = 50;
 float osc2 = 50;
@@ -80,19 +82,38 @@ float h;
 
 float tempo = 120;
 int playhead = 0;
+MidiOutput mymididevice; 
+
+int[] ionian = {0, 2, 4, 5, 7, 9, 11, 12}; 
+int[] dorian = {0, 2, 3, 5, 6, 8, 11, 12};
+int[] phrygian = {0, 1, 3, 5, 6, 10, 11, 12};
+int[] lydian = {0, 2, 4, 7, 6, 8, 9, 12};
+int[] mixolydian = {0, 2, 4, 5, 6, 8, 11, 12};
+int[] aeolian = {0, 2, 3, 5, 6, 10, 11, 12};
+int[] locrian = {0, 1, 3, 5, 7, 10, 11, 12};
 
 void setup() {
   //size(2000, 1200, P2D);
   fullScreen(P2D);
   w = width/float(cols);
   h = height/rows-padding*rows;
-  padding = height/50;
+  padding = 0;//height/50;
   for (int i = 0; i < beatsequences.length; i++) {
     beatsequences[i] = new BeatSeq(0, padding+h/8*i, w, h, i);
   }
   smooth();
   port = new Serial(this, "/dev/cu.usbmodem1431", 115200);
   noCursor();
+
+  // Show available MIDI output devices in console 
+  MidiOutputDevice devices[] = RWMidi.getOutputDevices();
+
+  for (int i = 0; i < devices.length; i++) { 
+    println(i + ": " + devices[i].getName());
+  } 
+
+  // Currently we assume the first device (#0) is the one we want 
+  mymididevice = RWMidi.getOutputDevices()[2].createOutput();
 }
 
 void draw() {
@@ -112,9 +133,9 @@ void draw() {
   stroke(255);
   fill(0, 255, 0);
   //padding rects
-  for (int j = 0; j < rows+1; j++) {
-    rect(0, h*j + padding*j, width, padding);
-  }
+  //for (int j = 0; j < rows+1; j++) {
+  //  rect(0, h*j + padding*j, width, padding);
+  //}
 
   fill(200, 255, 255, textAlpha);
   textSize(150);
@@ -141,7 +162,12 @@ void draw() {
 
 void updatePlayhead() {
   //if (frameCount > 0) {
-  if ((frameCount % int((60/tempo)*60)) == 0) playhead++;
+  if ((frameCount % int((60/tempo)*60)) == 0) {
+    playhead++;
+    for (BeatSeq bs : beatsequences) {
+      bs.clear();
+    }
+  } 
   if (playhead > numbeats) playhead = 0;
   //}
 }
