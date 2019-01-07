@@ -21,7 +21,7 @@ float osc1 = 50;
 float osc2 = 50;
 int count1 = 0;
 int count2 = 0;
-
+int seqIndex = 0;
 boolean pulseOn = false;
 boolean startCount1 = false;
 boolean startCount2 = false;
@@ -56,8 +56,6 @@ int[] ScaledY;   // USED TO POSITION SCALED HEARTBEAT WAVEFORM
 int[] rate;      // USED TO POSITION BPM DATA WAVEFORM
 float zoom;      // USED WHEN SCALING PULSE WAVEFORM TO PULSE WINDOW
 float offset;    // USED WHEN SCALING PULSE WAVEFORM TO PULSE WINDOW
-color eggshell = color(255, 253, 248);
-int heart = 0;   // This variable times the heart image 'pulse' on screen
 //  THESE VARIABLES DETERMINE THE SIZE OF THE DATA WINDOWS
 int PulseWindowWidth = 490;
 int PulseWindowHeight = 512;
@@ -73,6 +71,7 @@ int numPorts = serialPorts.length;
 boolean refreshPorts = false;
 float wave;
 
+//Limit the number of beats to 160, may need to raise if you're taking the pulse of someone who's just run a mile, caffine addicts, etc
 int numbeats = 160;
 int   cols = 53;//width/w;
 int  rows = 3;//height/w;
@@ -81,6 +80,7 @@ float h;
 
 float tempo = 120;
 int playhead = 0;
+
 void setup() {
   //size(2000, 1200, P2D);
   fullScreen(P2D);
@@ -124,18 +124,25 @@ void draw() {
   text(pulseText2, width-80, height/2);
 
   for (int i = 0; i < beatsequences.length; i++) {
-    //for (int y = 0; y < beatsequences.length; y++) {
     beatsequences[i].display();
     beatsequences[i].update(playhead);
-
-    //}
   }
+
+  // Apply the euclidean algorithm to currently selected sequence based on person's pulse
+
+
+  // Transparent rectangles indicate current sequence being accessed
+  noStroke();
+  fill(200, 255, 255, 180);
+  rect(0, seqIndex*h/8+padding, width, h/8);
+  rect(0, seqIndex*h/8+padding+h, width, h/8);
+  rect(0, seqIndex*h/8+padding+h*2, width, h/8);
 }
 
 void updatePlayhead() {
   //if (frameCount > 0) {
-    if ((frameCount % int((60/tempo)*60)) == 0) playhead++;
-    if (playhead > numbeats) playhead = 0;
+  if ((frameCount % int((60/tempo)*60)) == 0) playhead++;
+  if (playhead > numbeats) playhead = 0;
   //}
 }
 
@@ -148,17 +155,27 @@ void keyPressed() {
     count2 = 0;
     startCount2 = true;
   }
+
+  if (key == CODED) {
+    if (keyCode == UP) {
+      seqIndex--;
+      if (seqIndex < 0) {
+        seqIndex = beatsequences.length-1;
+      }
+    } 
+    if (keyCode == DOWN) {
+      seqIndex++;
+      if (seqIndex > beatsequences.length-1) {
+        seqIndex = 0;
+      }
+    }
+  }
 }
 
 
 void keyReleased() {
   if (key == 'q') {
-    startCount1 = false;
-    startCount2 = false;
-
-    beat1 = !beat1;
-    startAlphaCount = true;
-    flockingOn = false;
+    beatsequences[seqIndex].euclideanDistribution();
   }
 }
 

@@ -25,7 +25,24 @@ class BeatSeq {
     //    }
   }
 
-  void euclideanAverage(int bpm) {
+  int gcd(int a, int b) {
+    if (b != 0) {
+      return gcd(b, a % b);
+    } else {
+      return a;
+    }
+  }
+  
+  void euclideanDistribution(){
+    int myGCD = gcd(numbeats, BPM);
+    int count = 0;
+     for (int i = 0; i < box.length; i++) {
+       if(count == 0){
+          box[i].activated = true; 
+       }
+       count++;
+       if(count > myGCD) count = 0;
+     }
   }
 
   void update() {
