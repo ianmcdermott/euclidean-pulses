@@ -3,13 +3,15 @@ class BeatSeq {
   float eucAve;
   float x, y, w, h;
   int o;
+  boolean selected;
+  
   BeatSeq(float x_, float y_, float w_, float h_, int offset) {
     x = x_;
     y = y_;
     w = w_;
     h = h_;
     o = offset;
-
+    selected = false;
     //for (int i = 0; i < cols; i++) {
     //  float v = floor(i/53.0);
     //  println(v);
@@ -36,8 +38,8 @@ class BeatSeq {
   void euclideanDistribution() {
     //clear boxes previous state
     for (int i = 0; i < box.length; i++) {
-        box[i].activated = false;
-      }
+      box[i].activated = false;
+    }
     int myGCD = gcd(numbeats, BPM);
     int count = 0;
     for (int i = 0; i < box.length; i++) {
@@ -49,30 +51,25 @@ class BeatSeq {
     }
   }
 
-  void update() {
-    for (int i = 0; i < box.length; i++) {
-      if (i % eucAve == 0 && str(eucAve) != null) {
-        box[i].activated = true;
-      } else {
-        box[i].activated = false;
-      }
-    }
-  }
-
   void display() {
     for (int i = 0; i < box.length; i++) {
       box[i].display();
     }
   }
 
-  void update(int playh) {
+  void update(int playh, int fc) {
     for (int i = 0; i < box.length; i++) {
       if (playhead == i) {
         box[i].playing = true;
       } else {
         box[i].playing = false;
       }
-      box[i].update();
+      box[i].update(fc);
+      if (selected) {
+        box[i].selected = true;
+      } else {
+        box[i].selected = false;
+      }
     }
   }
 

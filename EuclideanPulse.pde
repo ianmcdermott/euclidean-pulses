@@ -1,6 +1,3 @@
-//to do 
-//optimize boids for regional crowfollow
-//optimize boids to only detect a chunk of the array list of points
 import processing.serial.*;  // serial library lets us talk to Arduino
 import rwmidi.*;  
 
@@ -17,7 +14,7 @@ float angleRes = .0007;
 BeatSeq[] beatsequences = new BeatSeq[8];
 
 boolean beat1 = true;
-int tonic = 50;
+int tonic = 70;
 
 float osc1 = 50;
 float osc2 = 50;
@@ -80,10 +77,11 @@ int  rows = 3;//height/w;
 float w;
 float h;
 
-float tempo = 120;
+float tempo = 240;
 int playhead = 0;
 MidiOutput mymididevice; 
 
+int[] scale = new int[8];
 int[] ionian = {0, 2, 4, 5, 7, 9, 11, 12}; 
 int[] dorian = {0, 2, 3, 5, 6, 8, 11, 12};
 int[] phrygian = {0, 1, 3, 5, 6, 10, 11, 12};
@@ -91,6 +89,7 @@ int[] lydian = {0, 2, 4, 7, 6, 8, 9, 12};
 int[] mixolydian = {0, 2, 4, 5, 6, 8, 11, 12};
 int[] aeolian = {0, 2, 3, 5, 6, 10, 11, 12};
 int[] locrian = {0, 1, 3, 5, 7, 10, 11, 12};
+int[] percussion = {0, 1, 2, 3, 4, 5, 6, 7};
 
 void setup() {
   //size(2000, 1200, P2D);
@@ -114,9 +113,11 @@ void setup() {
 
   // Currently we assume the first device (#0) is the one we want 
   mymididevice = RWMidi.getOutputDevices()[2].createOutput();
+  smooth();
 }
 
 void draw() {
+  background(0);
   updatePlayhead();
   if (serialPortFound) {
     // ONLY RUN THE VISUALIZER AFTER THE PORT IS CONNECTED
@@ -146,18 +147,13 @@ void draw() {
 
   for (int i = 0; i < beatsequences.length; i++) {
     beatsequences[i].display();
-    beatsequences[i].update(playhead);
+    beatsequences[i].update(playhead, frameCount);
+    if (i == seqIndex) {
+      beatsequences[i].selected = true;
+    } else {
+      beatsequences[i].selected = false;
+    }
   }
-
-  // Apply the euclidean algorithm to currently selected sequence based on person's pulse
-
-
-  // Transparent rectangles indicate current sequence being accessed
-  noStroke();
-  fill(200, 255, 255, 180);
-  rect(0, seqIndex*h/8+padding, width, h/8);
-  rect(0, seqIndex*h/8+padding+h, width, h/8);
-  rect(0, seqIndex*h/8+padding+h*2, width, h/8);
 }
 
 void updatePlayhead() {
@@ -182,6 +178,16 @@ void keyPressed() {
     startCount2 = true;
   }
 
+  if (key == '1')  scale = ionian;
+  if (key == '2')  scale = dorian;
+  if (key == '3')  scale = phrygian;
+  if (key == '4')  scale = lydian;
+  if (key == '5')  scale = mixolydian;
+  if (key == '6')  scale = aeolian;
+  if (key == '7')  scale = locrian;
+  if (key == '8')  scale = percussion;
+
+
   if (key == CODED) {
     if (keyCode == UP) {
       seqIndex--;
@@ -193,6 +199,18 @@ void keyPressed() {
       seqIndex++;
       if (seqIndex > beatsequences.length-1) {
         seqIndex = 0;
+      }
+    }
+    if (keyCode == RIGHT) {
+      tempo++;
+      if (tempo > 250) {
+        tempo = 250;
+      }
+    } 
+    if (keyCode == DOWN) {
+      tempo--;
+      if (tempo < 40) {
+        tempo = 40;
       }
     }
   }
