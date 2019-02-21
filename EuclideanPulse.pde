@@ -101,7 +101,7 @@ void setup() {
     beatsequences[i] = new BeatSeq(0, padding+h/8*i, w, h, i);
   }
   smooth();
-  port = new Serial(this, "/dev/cu.usbmodem1431", 115200);
+  port = new Serial(this, "/dev/cu.usbmodem18", 115200);
   noCursor();
 
   // Show available MIDI output devices in console 

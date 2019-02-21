@@ -18,7 +18,7 @@ class BeatSeq {
     int yoff = 0;
     for (int i = 0; i < box.length; i++) {
       if ((i > 0) && i % 53 == 0) yoff++;
-      box[i] = new Box(w*(i % 53), y+yoff*int(height/rows), w, h/8, o);
+      box[i] = new Box(w*(i % 53), y+yoff*int(height/rows), w, h/8, o, i);
     }
     //}
 

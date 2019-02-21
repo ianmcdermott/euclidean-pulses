@@ -4,13 +4,15 @@ class Box {
   boolean playing;
   boolean played = false;
   boolean selected;
+  int num;
 
-  Box(float x_, float y_, float w_, float h_, int o_) {
+  Box(float x_, float y_, float w_, float h_, int o_, int n_) {
     x = x_;
     y = y_;
     w = w_;
     h = h_;
     o = o_;
+    num = n_;
   }
 
   void display() {
@@ -37,13 +39,13 @@ class Box {
     if (!played) {
       if (activated && playing) {
         mymididevice.sendNoteOn(0, tonic + scale[int(o)], 90);
-        println("hit");
         played = true;
       }
     } else {
       mymididevice.sendNoteOff(0, int(tonic + scale[int(o)]), 90);
     }
+    w = (noise((num+fc)*.004)*100)-w/8;
 
-    w += sin((2*o+fc)*.2)*1.5;
+    //w += sin((2*o+fc)*.02)*.25;
   }
 }
