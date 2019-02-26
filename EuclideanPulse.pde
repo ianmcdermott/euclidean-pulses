@@ -1,29 +1,36 @@
+//to do 
+//optimize boids for regional crowfollow
+//optimize boids to only detect a chunk of the array list of points
 import processing.serial.*;  // serial library lets us talk to Arduino
-import rwmidi.*;  
+import rwmidi.*;  // For Ableton
 
+//ArrayList<boolean> rhythm = new ArrayList<boolean>();
+int pauses, per_pulse, remainder, steps, pulses, noskip, skipXTime;
+boolean switcher;
 //Sprite
 PImage[] wingImages;
 int imageCount = 119;
-
 float padding;
 
 float angle = 0;
 float strokeW = 1;
 float angleRes = .0007;
+int playhead = 0;
 
 BeatSeq[] beatsequences = new BeatSeq[8];
-
+float tempo = 120;
 boolean beat1 = true;
-int tonic = 70;
 
 float osc1 = 50;
 float osc2 = 50;
 int count1 = 0;
 int count2 = 0;
-int seqIndex = 0;
+
 boolean pulseOn = false;
 boolean startCount1 = false;
 boolean startCount2 = false;
+
+boolean joystickPressed, up, down, left, right;
 
 PImage lbug;
 //boolean osc = true;
@@ -36,6 +43,7 @@ boolean springsOn = false;
 boolean boidsOn = true;
 boolean flockingOn = true;
 boolean pathFollow = false;
+int seqIndex = 0;
 
 int textAlpha = 0;
 boolean textAlphaIncrease = false;
@@ -47,6 +55,16 @@ String pulseText2 = "";
 
 Serial port;
 
+//Modes:
+int[] ionian = {0, 2, 4, 5, 7, 9, 11, 12}; 
+int[] dorian = {0, 2, 3, 5, 7, 9, 10, 12};
+int[] phrygian = {0, 1, 3, 5, 7, 8, 10, 12};
+int[] lydian = {0, 2, 4, 6, 7, 9, 11, 12};
+int[] mixolydian = {0, 2, 4, 5, 7, 9, 10, 12};
+int[] aeolian = {0, 2, 3, 5, 7, 8, 10, 12};
+int[] locrian = {0, 1, 3, 5, 6, 8, 10, 12};
+int root = 60;
+
 int Sensor;      // HOLDS PULSE SENSOR DATA FROM ARDUINO
 int IBI;         // HOLDS TIME BETWEN HEARTBEATS FROM ARDUINO
 int BPM;         // HOLDS HEART RATE VALUE FROM ARDUINO
@@ -55,6 +73,8 @@ int[] ScaledY;   // USED TO POSITION SCALED HEARTBEAT WAVEFORM
 int[] rate;      // USED TO POSITION BPM DATA WAVEFORM
 float zoom;      // USED WHEN SCALING PULSE WAVEFORM TO PULSE WINDOW
 float offset;    // USED WHEN SCALING PULSE WAVEFORM TO PULSE WINDOW
+color eggshell = color(255, 253, 248);
+int heart = 0;   // This variable times the heart image 'pulse' on screen
 //  THESE VARIABLES DETERMINE THE SIZE OF THE DATA WINDOWS
 int PulseWindowWidth = 490;
 int PulseWindowHeight = 512;
@@ -70,40 +90,33 @@ int numPorts = serialPorts.length;
 boolean refreshPorts = false;
 float wave;
 
-//Limit the number of beats to 160, may need to raise if you're taking the pulse of someone who's just run a mile, caffine addicts, etc
 int numbeats = 160;
 int   cols = 53;//width/w;
 int  rows = 3;//height/w;
-float w;
-float h;
+private float w;
+private float h;
 
-float tempo = 240;
-int playhead = 0;
+int playRate = 0;
 MidiOutput mymididevice; 
-
-int[] scale = new int[8];
-int[] ionian = {0, 2, 4, 5, 7, 9, 11, 12}; 
-int[] dorian = {0, 2, 3, 5, 6, 8, 11, 12};
-int[] phrygian = {0, 1, 3, 5, 6, 10, 11, 12};
-int[] lydian = {0, 2, 4, 7, 6, 8, 9, 12};
-int[] mixolydian = {0, 2, 4, 5, 6, 8, 11, 12};
-int[] aeolian = {0, 2, 3, 5, 6, 10, 11, 12};
-int[] locrian = {0, 1, 3, 5, 7, 10, 11, 12};
-int[] percussion = {0, 1, 2, 3, 4, 5, 6, 7};
+int mboolval;
 
 void setup() {
   //size(2000, 1200, P2D);
   fullScreen(P2D);
   w = width/float(cols);
+  padding = height/50;
   h = height/rows-padding*rows;
-  padding = 0;//height/50;
-  for (int i = 0; i < beatsequences.length; i++) {
-    beatsequences[i] = new BeatSeq(0, padding+h/8*i, w, h, i);
-  }
-  smooth();
-  port = new Serial(this, "/dev/cu.usbmodem18", 115200);
-  noCursor();
 
+  for (int i = 0; i < beatsequences.length; i++) {
+    beatsequences[i] = new BeatSeq(0, i*h/8+padding, w, h/8, color(int(255/beatsequences.length)*i, 
+      0, 0), h+padding, i, root+ ionian[i], i);
+  }
+  //smooth();
+  port = new Serial(this, "/dev/cu.usbmodem1431", 115200);
+  noCursor();
+  //frameRate(tempo/60);
+
+  ///////// Ableton /////////
   // Show available MIDI output devices in console 
   MidiOutputDevice devices[] = RWMidi.getOutputDevices();
 
@@ -113,12 +126,12 @@ void setup() {
 
   // Currently we assume the first device (#0) is the one we want 
   mymididevice = RWMidi.getOutputDevices()[2].createOutput();
-  smooth();
 }
 
 void draw() {
   background(0);
-  updatePlayhead();
+  //updatePlayhead();
+
   if (serialPortFound) {
     // ONLY RUN THE VISUALIZER AFTER THE PORT IS CONNECTED
 
@@ -131,111 +144,168 @@ void draw() {
       refreshPorts = false;
     }
   }
-  stroke(255);
-  fill(0, 255, 0);
-  //padding rects
+  //stroke(255);
+  //fill(0, 255, 0);
+  ////padding rects
   //for (int j = 0; j < rows+1; j++) {
   //  rect(0, h*j + padding*j, width, padding);
   //}
 
-  fill(200, 255, 255, textAlpha);
-  textSize(150);
-  textAlign(LEFT);
-  text(pulseText1, 80, height/2); 
-  textAlign(RIGHT);
-  text(pulseText2, width-80, height/2);
+  stroke(255);
+  fill(255, 0, 0);
 
   for (int i = 0; i < beatsequences.length; i++) {
-    beatsequences[i].display();
+    pushMatrix();
+    translate(0, h/16);
+    beatsequences[i].play(playRate % 160);
+
+    //beatsequences[i].update(frameCount);
     beatsequences[i].update(playhead, frameCount);
+
+    beatsequences[i].display();
     if (i == seqIndex) {
       beatsequences[i].selected = true;
     } else {
       beatsequences[i].selected = false;
     }
+
+
+    popMatrix();
   }
+
+  ///// Text display /////
+
+  if (textAlphaIncrease) {
+    textAlpha+= 10;
+  }
+
+  if (textAlpha >= 150) {
+    textAlphaIncrease = false;
+  }
+
+  if (textAlphaIncrease == false && startAlphaCount) {
+    alphaCount++;
+    if (alphaCount >= 30) {
+      textAlpha-= 10;
+      if (textAlpha <= 0) {
+        textAlpha = 0;
+        alphaCount = 0;
+        startAlphaCount = false;
+      }
+    }
+  }
+
+  stroke(255);
+  fill(200, 255, 255, textAlpha);
+  textSize(150);
+  textAlign(CENTER);
+  text(pulseText1, width/2, height/2+75);
+
+  if (frameCount*120 % 1000/(tempo/120) == 0) {
+
+    playRate++;
+  }
+  
+  checkJoystick();
 }
 
-void updatePlayhead() {
-  //if (frameCount > 0) {
-  if ((frameCount % int((60/tempo)*60)) == 0) {
-    playhead++;
-    for (BeatSeq bs : beatsequences) {
-      bs.clear();
+void checkJoystick() {
+  if (down) {
+    seqIndex++;
+    if (seqIndex > beatsequences.length-1) {
+      seqIndex = 0;
     }
-  } 
-  if (playhead > numbeats) playhead = 0;
-  //}
+  }
+  if (up) {
+    seqIndex--;
+
+    if (seqIndex < 0) {
+      seqIndex = beatsequences.length-1;
+    }
+  }
+  if (right) {
+    tempo+= 40;
+    if (tempo > 2600) tempo = 2600;
+  }
+  if (left) {
+    tempo-= 40;
+    if (tempo < 60) tempo = 60;
+  }
+  if (!joystickPressed) {
+    textAlphaIncrease = true;
+    checkPulse();
+    startCount1 = false;
+    startCount2 = false;
+    println("BPM is "+BPM);
+    beatsequences[seqIndex].savePulse(BPM);
+    beat1 = !beat1;
+    startAlphaCount = true;
+    seqIndex++;
+    if (seqIndex > beatsequences.length-1) {
+      seqIndex = 0;
+    }
+  }
 }
 
 void keyPressed() {
-  textAlphaIncrease = true;
-  if (beat1) {
-    count1 = 0;
-    startCount1 = true;
-  } else {
-    count2 = 0;
-    startCount2 = true;
+  if (key == 'q') {
+    textAlphaIncrease = true;
+    checkPulse();
   }
+}
 
-  if (key == '1')  scale = ionian;
-  if (key == '2')  scale = dorian;
-  if (key == '3')  scale = phrygian;
-  if (key == '4')  scale = lydian;
-  if (key == '5')  scale = mixolydian;
-  if (key == '6')  scale = aeolian;
-  if (key == '7')  scale = locrian;
-  if (key == '8')  scale = percussion;
-
-
+void keyReleased() {
   if (key == CODED) {
-    if (keyCode == UP) {
-      seqIndex--;
-      if (seqIndex < 0) {
-        seqIndex = beatsequences.length-1;
-      }
-    } 
     if (keyCode == DOWN) {
       seqIndex++;
       if (seqIndex > beatsequences.length-1) {
         seqIndex = 0;
       }
     }
+    if (keyCode == UP) {
+      seqIndex--;
+
+      if (seqIndex < 0) {
+        seqIndex = beatsequences.length-1;
+      }
+    }
     if (keyCode == RIGHT) {
-      tempo++;
-      if (tempo > 250) {
-        tempo = 250;
-      }
-    } 
-    if (keyCode == DOWN) {
-      tempo--;
-      if (tempo < 40) {
-        tempo = 40;
-      }
+      tempo+= 40;
+      if (tempo > 2600) tempo = 2600;
+    }
+    if (keyCode == LEFT) {
+      tempo-= 40;
+      if (tempo < 60) tempo = 60;
+    }
+  }
+  if (key == 'q') {
+    startCount1 = false;
+    startCount2 = false;
+    println("BPM is "+BPM);
+    beatsequences[seqIndex].savePulse(BPM);
+    beat1 = !beat1;
+    startAlphaCount = true;
+    seqIndex++;
+    if (seqIndex > beatsequences.length-1) {
+      seqIndex = 0;
     }
   }
 }
 
+void checkPulse() {
+  osc1 = BPM;
+  pulseText1 = str(BPM);
+}
 
-void keyReleased() {
-  if (key == 'q') {
-    beatsequences[seqIndex].euclideanDistribution();
+
+void getPulse() {
+  while (pulseOn) {
+    if (startCount1) count1++;
+    else if (startCount2) count2++;
+    //}
+    //return count;
   }
 }
-
-void checkPulse() {
-  if (startCount1) {
-    count1++;
-    osc1 = BPM;
-    pulseText1 = str(BPM);
-  } else if (startCount2) {
-    count2++;
-    osc2 = BPM;
-    pulseText2 = str(BPM);
-  } 
-  //println("BPM: "+BPM);
-}
-
 
 void autoScanPorts() {
   if (Serial.list().length != numPorts) {
@@ -261,4 +331,17 @@ void resetDataTraces() {
   for (int i=0; i<RawY.length; i++) {
     RawY[i] = height/2; // initialize the pulse window data line to V/2
   }
+}
+
+void updatePlayhead() {
+  //if (frameCount > 0) {
+  println(60/tempo);
+  if ((frameCount % int((60/tempo)*60)) == 0) {
+    playhead++;
+    for (BeatSeq bs : beatsequences) {
+      bs.clearArray();
+    }
+  } 
+  if (playhead > numbeats) playhead = 0;
+  //}
 }
