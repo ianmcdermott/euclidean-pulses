@@ -36,7 +36,14 @@ class BeatSeq {
     }
   }
 
-
+  void resetNHP() {
+    for (int i = 0; i < cols; i++) {
+      for (int j = 0; j < rows; j++) {
+        box[i][j].noteHasntPlayed = true;
+      }
+    }
+  }
+  
   void update(int playh, int fc) {
     for (int i = 0; i < cols; i++) {
       for (int j = 0; j < rows; j++) {
@@ -133,12 +140,12 @@ class BeatSeq {
     }
     println("storedR : " + storedRhythm.length);
   }
-  
-   //void clearArray() {
-   // for (int i = 0; i < cols; i++) {
-   //   for (int j = 0; j < rows; j++) {
-   //     box[i][j].played = false;
-   //   }
-   // }
+
+  //void clearArray() {
+  // for (int i = 0; i < cols; i++) {
+  //   for (int j = 0; j < rows; j++) {
+  //     box[i][j].played = false;
+  //   }
+  // }
   //}
 }

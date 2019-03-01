@@ -18,7 +18,7 @@ float angleRes = .0007;
 int playhead = 0;
 
 BeatSeq[] beatsequences = new BeatSeq[8];
-float tempo = 120;
+float tempo = 20;
 boolean beat1 = true;
 
 float osc1 = 50;
@@ -63,7 +63,7 @@ int[] lydian = {0, 2, 4, 6, 7, 9, 11, 12};
 int[] mixolydian = {0, 2, 4, 5, 7, 9, 10, 12};
 int[] aeolian = {0, 2, 3, 5, 7, 8, 10, 12};
 int[] locrian = {0, 1, 3, 5, 6, 8, 10, 12};
-int root = 60;
+int root = 64;
 
 int Sensor;      // HOLDS PULSE SENSOR DATA FROM ARDUINO
 int IBI;         // HOLDS TIME BETWEN HEARTBEATS FROM ARDUINO
@@ -109,12 +109,12 @@ void setup() {
 
   for (int i = 0; i < beatsequences.length; i++) {
     beatsequences[i] = new BeatSeq(0, i*h/8+padding, w, h/8, color(int(255/beatsequences.length)*i, 
-      0, 0), h+padding, i, root+ ionian[i], i);
+      0, 0), h+padding, i, root+ dorian[i], i);
   }
   //smooth();
-  port = new Serial(this, "/dev/cu.usbmodem1431", 115200);
+  //port = new Serial(this, "/dev/cu.usbmodem1431", 115200);
   noCursor();
-  //frameRate(tempo/60);
+  frameRate(120);
 
   ///////// Ableton /////////
   // Show available MIDI output devices in console 
@@ -129,8 +129,10 @@ void setup() {
 }
 
 void draw() {
+  println("FR:: "+frameRate);
   background(0);
   //updatePlayhead();
+  //playhead++;
 
   if (serialPortFound) {
     // ONLY RUN THE VISUALIZER AFTER THE PORT IS CONNECTED
@@ -157,7 +159,7 @@ void draw() {
   for (int i = 0; i < beatsequences.length; i++) {
     pushMatrix();
     translate(0, h/16);
-    beatsequences[i].play(playRate % 160);
+    beatsequences[i].play(int(frameCount/tempo) % numbeats);
 
     //beatsequences[i].update(frameCount);
     beatsequences[i].update(playhead, frameCount);
@@ -201,12 +203,14 @@ void draw() {
   textAlign(CENTER);
   text(pulseText1, width/2, height/2+75);
 
-  if (frameCount*120 % 1000/(tempo/120) == 0) {
-
+  if (int(frameCount/tempo) % numbeats == 0) {
+    for (int i = 0; i < beatsequences.length; i++) {
+      beatsequences[i].resetNHP();
+    }
     playRate++;
   }
-  
-  checkJoystick();
+
+  //checkJoystick();
 }
 
 void checkJoystick() {
@@ -224,12 +228,18 @@ void checkJoystick() {
     }
   }
   if (right) {
-    tempo+= 40;
-    if (tempo > 2600) tempo = 2600;
+    tempo++;
+    if (tempo > 240) tempo = 240;
+    for (int i = 0; i < beatsequences.length; i++) {
+      beatsequences[i].resetNHP();
+    }
   }
   if (left) {
-    tempo-= 40;
-    if (tempo < 60) tempo = 60;
+    tempo--;
+    if (tempo < 5) tempo = 5;
+    for (int i = 0; i < beatsequences.length; i++) {
+      beatsequences[i].resetNHP();
+    }
   }
   if (!joystickPressed) {
     textAlphaIncrease = true;
@@ -237,6 +247,10 @@ void checkJoystick() {
     startCount1 = false;
     startCount2 = false;
     println("BPM is "+BPM);
+    //For testing
+    BPM = int(random(60, 90));
+    beatsequences[seqIndex].savePulse(BPM);
+
     beatsequences[seqIndex].savePulse(BPM);
     beat1 = !beat1;
     startAlphaCount = true;
@@ -270,18 +284,26 @@ void keyReleased() {
       }
     }
     if (keyCode == RIGHT) {
-      tempo+= 40;
-      if (tempo > 2600) tempo = 2600;
+      tempo++;
+      if (tempo > 240) tempo = 240;
+      for (int i = 0; i < beatsequences.length; i++) {
+        beatsequences[i].resetNHP();
+      }
     }
     if (keyCode == LEFT) {
-      tempo-= 40;
-      if (tempo < 60) tempo = 60;
+      tempo--;
+      if (tempo < 5) tempo = 5;
+      for (int i = 0; i < beatsequences.length; i++) {
+        beatsequences[i].resetNHP();
+      }
     }
   }
   if (key == 'q') {
     startCount1 = false;
     startCount2 = false;
     println("BPM is "+BPM);
+    //For testing
+    BPM = int(random(60, 90));
     beatsequences[seqIndex].savePulse(BPM);
     beat1 = !beat1;
     startAlphaCount = true;
@@ -294,6 +316,7 @@ void keyReleased() {
 
 void checkPulse() {
   osc1 = BPM;
+
   pulseText1 = str(BPM);
 }
 
@@ -335,7 +358,6 @@ void resetDataTraces() {
 
 void updatePlayhead() {
   //if (frameCount > 0) {
-  println(60/tempo);
   if ((frameCount % int((60/tempo)*60)) == 0) {
     playhead++;
     for (BeatSeq bs : beatsequences) {

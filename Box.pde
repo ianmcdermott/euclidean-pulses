@@ -7,9 +7,10 @@ class Box {
   int onCount;
   int countLength = 1;
   float num;
-    boolean played = false;
-int vo;
-
+  boolean played = false;
+  int vo;
+  boolean noteHasntPlayed;
+  
   Box(float x_, float y_, float w_, float h_, color c_, int ch, int nt, float n_, int o_, int vo_) {
     x = x_;
     y = y_;
@@ -23,14 +24,17 @@ int vo;
     o = o_;
     num = n_;
     vo = vo_;
+    noteHasntPlayed = true;
   }
 
   void update() {
-    if (activated && playing) {
-      mymididevice.sendNoteOn(channel, note, 90);
-      noteIsOn = true;
+    if (noteHasntPlayed) {
+      if (activated && playing) {
+        mymididevice.sendNoteOn(channel, note, 90);
+        noteIsOn = true;
+        noteHasntPlayed = false;
+      }
     }
-
     if (noteIsOn) {
       onCount++;
       if (onCount > countLength) {
@@ -47,12 +51,13 @@ int vo;
     noStroke();
     ellipseMode(CENTER);
     if (activated && !playing) {
-      fill(0, 255-255/8*channel, 0);
-      stroke(c);
+            fill(255-o*25, 0, 0);
+
     } else if (playing || playing && activated) {
       fill(255);
     } else {
-      fill(255-o*25, 0, 0);
+            fill(0);
+
     }
     //if (activated) {
     //  fill(255-o*25, 230-o*25, 0);
@@ -60,7 +65,7 @@ int vo;
 
     ellipse(x+w/2, y+w/2, w-2, w-2);
     if (selected) {
-      strokeWeight(3);
+      //strokeWeight(3);
       fill(255-o*20, 200-o*20, 210-o*20, 170);
       ellipse(x+w/2, y+w/2, w-2, w-2);
     }
