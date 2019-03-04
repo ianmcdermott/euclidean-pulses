@@ -16,8 +16,11 @@ float angle = 0;
 float strokeW = 1;
 float angleRes = .0007;
 int playhead = 0;
+int bpmStoreCount = 0;
+int previousBPM;
+int threshhold = 5;
 
-BeatSeq[] beatsequences = new BeatSeq[8];
+BeatSeq[] beatsequences = new BeatSeq[12];
 float tempo = 20;
 boolean beat1 = true;
 
@@ -56,13 +59,15 @@ String pulseText2 = "";
 Serial port;
 
 //Modes:
-int[] ionian = {0, 2, 4, 5, 7, 9, 11, 12}; 
-int[] dorian = {0, 2, 3, 5, 7, 9, 10, 12};
-int[] phrygian = {0, 1, 3, 5, 7, 8, 10, 12};
-int[] lydian = {0, 2, 4, 6, 7, 9, 11, 12};
-int[] mixolydian = {0, 2, 4, 5, 7, 9, 10, 12};
-int[] aeolian = {0, 2, 3, 5, 7, 8, 10, 12};
-int[] locrian = {0, 1, 3, 5, 6, 8, 10, 12};
+int[] melodicScale = new int[12];
+int[] chromatic  = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+int[] ionian     = {0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19}; 
+int[] dorian     = {0, 2, 3, 5, 7, 9, 10, 12, 14, 15, 17, 19};
+int[] phrygian   = {0, 1, 3, 5, 7, 8, 10, 12, 13, 15, 17, 20};
+int[] lydian     = {0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19};
+int[] mixolydian = {0, 2, 4, 5, 7, 9, 10, 12, 14, 16, 17, 19};
+int[] aeolian    = {0, 2, 3, 5, 7, 8, 10, 12, 14, 15, 17, 19};
+int[] locrian    = {0, 1, 3, 5, 6, 8, 10, 12, 13, 15, 17, 18};
 int root = 64;
 
 int Sensor;      // HOLDS PULSE SENSOR DATA FROM ARDUINO
@@ -107,12 +112,14 @@ void setup() {
   padding = height/50;
   h = height/rows-padding*rows;
 
+  melodicScale = dorian;
+
   for (int i = 0; i < beatsequences.length; i++) {
     beatsequences[i] = new BeatSeq(0, i*h/8+padding, w, h/8, color(int(255/beatsequences.length)*i, 
-      0, 0), h+padding, i, root+ dorian[i], i);
+      0, 0), h+padding, i, root + melodicScale[i], i);
   }
   //smooth();
-  //port = new Serial(this, "/dev/cu.usbmodem1431", 115200);
+  port = new Serial(this, "/dev/cu.usbmodem1441", 115200);
   noCursor();
   frameRate(120);
 
@@ -209,8 +216,19 @@ void draw() {
     }
     playRate++;
   }
-
-  //checkJoystick();
+  if (BPM > 45 && BPM < 161) {
+    if (bpmStoreCount > threshhold) {
+      beatsequences[seqIndex].savePulse(BPM);
+      textAlphaIncrease = true;
+      checkPulse();
+      seqIndex++;
+      if (seqIndex > beatsequences.length-1) {
+        seqIndex = 0;
+      }
+      bpmStoreCount = 0;
+    }
+  }
+  checkJoystick();
 }
 
 void checkJoystick() {
@@ -241,25 +259,23 @@ void checkJoystick() {
       beatsequences[i].resetNHP();
     }
   }
-  if (!joystickPressed) {
-    textAlphaIncrease = true;
-    checkPulse();
-    startCount1 = false;
-    startCount2 = false;
-    println("BPM is "+BPM);
-    //For testing
-    BPM = int(random(60, 90));
-    beatsequences[seqIndex].savePulse(BPM);
+  //if (!joystickPressed) {
+  //  textAlphaIncrease = true;
+  //  checkPulse();
+  //  startCount1 = false;
+  //  startCount2 = false;
+  //  println("BPM is "+BPM);
+  //  //For testing
+  //  //BPM = int(random(60, 90));
 
-    beatsequences[seqIndex].savePulse(BPM);
-    beat1 = !beat1;
-    startAlphaCount = true;
-    seqIndex++;
-    if (seqIndex > beatsequences.length-1) {
-      seqIndex = 0;
-    }
-  }
+  //  beat1 = !beat1;
+  //  startAlphaCount = true;
+  //  //seqIndex++;
+  //  if (seqIndex > beatsequences.length-1) {
+  //    seqIndex = 0;
+  //  }
 }
+
 
 void keyPressed() {
   if (key == 'q') {
@@ -303,11 +319,11 @@ void keyReleased() {
     startCount2 = false;
     println("BPM is "+BPM);
     //For testing
-    BPM = int(random(60, 90));
-    beatsequences[seqIndex].savePulse(BPM);
+    //BPM = int(random(60, 90));
+    //beatsequences[seqIndex].savePulse(BPM);
     beat1 = !beat1;
     startAlphaCount = true;
-    seqIndex++;
+    //seqIndex++;
     if (seqIndex > beatsequences.length-1) {
       seqIndex = 0;
     }

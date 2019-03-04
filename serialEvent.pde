@@ -11,7 +11,8 @@ void serialEvent(Serial port) {
       inData = inData.substring(1);        // cut off the leading 'B'
       BPM = int(inData);                   // convert the string to usable int
       beat = true;                         // set beat flag to advance heart rate graph
-      heart = 20;                          // begin heart image 'swell' timer
+      heart = 20;           // begin heart image 'swell' timer
+      bpmStoreCount++;      // Up the bpmStore Count so we can check how long it's been since a big change in pulse
     }
     if (inData.charAt(0) == 'Q') {            // leading 'Q' means IBI data
       inData = inData.substring(1);        // cut off the leading 'Q'

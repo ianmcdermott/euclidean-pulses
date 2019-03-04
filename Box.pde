@@ -10,6 +10,7 @@ class Box {
   boolean played = false;
   int vo;
   boolean noteHasntPlayed;
+  int[] melodicNote = new int[12];
   
   Box(float x_, float y_, float w_, float h_, color c_, int ch, int nt, float n_, int o_, int vo_) {
     x = x_;
@@ -30,7 +31,10 @@ class Box {
   void update() {
     if (noteHasntPlayed) {
       if (activated && playing) {
-        mymididevice.sendNoteOn(channel, note, 90);
+        // send Rhythmic note
+        mymididevice.sendNoteOn(channel, int(num), 90);
+        // Send Melodic Note
+        mymididevice.sendNoteOn(channel+12, note, 90);
         noteIsOn = true;
         noteHasntPlayed = false;
       }
@@ -40,7 +44,9 @@ class Box {
       if (onCount > countLength) {
         noteIsOn = false;
         onCount = 0;
-        mymididevice.sendNoteOff(channel, note, 0);
+        mymididevice.sendNoteOff(channel, int(num), 0);
+                mymididevice.sendNoteOff(channel+12, note, 0);
+
       }
     }
     w = (noise((frameCount+vo*10+o*25)*.004)*100);
