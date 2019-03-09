@@ -20,31 +20,46 @@ void serialEvent(Serial port) {
     }
     if (inData.charAt(0) == 'U') {            // leading 'Q' means IBI data
       up = true;
+      upCount++;
     } else {
       up = false;
+      upCount = 0;
     }
     if (inData.charAt(0) == 'D') {            // leading 'Q' means IBI data
       down = true;
+      downCount++;
     } else {
       down = false;
-    }
-    if (inData.charAt(0) == 'L') {            // leading 'Q' means IBI data
-      left = true;
-    } else {
-      left = false;
+      downCount = 0;
     }
     if (inData.charAt(0) == 'R') {            // leading 'Q' means IBI data
+      left = true;
+      leftCount++;
+    } else {
+      left = false;
+      leftCount = 0;
+    }
+    if (inData.charAt(0) == 'L') {            // leading 'Q' means IBI data
       right = true;
+      rightCount++;
     } else {
       right = false;
+      rightCount = 0;
     }
-    if (inData.charAt(0) == 'P') {            // leading 'Q' means IBI data
-      joystickPressed = true;
+    if (inData.charAt(0) == 'J') {            // leading 'Q' means IBI data
+      pressedCount++;
+      if (pressedCount > 5)       joystickPressed = true;
+      pressedLock = false;
+      println(pressedCount);
     } else {
       joystickPressed = false;
+      pressedCount--;
+      if (pressedCount <= 5) {
+        pressedCount = 0;
+        pressedLock = true;
+      }
+      blockPress = true;
     }
-
-    println(inData.charAt(0));
   } 
   catch(Exception e) {
     println(e.toString());

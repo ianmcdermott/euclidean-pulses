@@ -11,7 +11,7 @@ boolean switcher;
 PImage[] wingImages;
 int imageCount = 119;
 float padding;
-
+int userCount;
 float angle = 0;
 float strokeW = 1;
 float angleRes = .0007;
@@ -19,9 +19,10 @@ int playhead = 0;
 int bpmStoreCount = 0;
 int previousBPM;
 int threshhold = 5;
-
+boolean blockPress = false;
 BeatSeq[] beatsequences = new BeatSeq[12];
 float tempo = 20;
+int tempoOffset = 0;
 boolean beat1 = true;
 
 float osc1 = 50;
@@ -53,6 +54,11 @@ boolean textAlphaIncrease = false;
 int alphaCount = 0;
 boolean startAlphaCount = false;
 
+int textScaleAlpha = 0;
+boolean textScaleAlphaIncrease = false;
+int scaleAlphaCount = 0;
+boolean  startScaleAlphaCount = false;
+
 String pulseText1 = "";
 String pulseText2 = "";
 
@@ -69,6 +75,17 @@ int[] mixolydian = {0, 2, 4, 5, 7, 9, 10, 12, 14, 16, 17, 19};
 int[] aeolian    = {0, 2, 3, 5, 7, 8, 10, 12, 14, 15, 17, 19};
 int[] locrian    = {0, 1, 3, 5, 6, 8, 10, 12, 13, 15, 17, 18};
 int root = 64;
+int[] randomOctave = {-24, -12, 0, 0, 0, 0, 12, 24};
+
+String[] scaleNames = {"ionian", "dorian", "phrygian", "lydian", "mixolydian", "aeolian", "locrian"}; 
+int[][] scales = {{0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19}, 
+  {0, 2, 3, 5, 7, 9, 10, 12, 14, 15, 17, 19}, 
+  {0, 1, 3, 5, 7, 8, 10, 12, 13, 15, 17, 20}, 
+  {0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19}, 
+  {0, 2, 4, 5, 7, 9, 10, 12, 14, 16, 17, 19}, 
+  {0, 2, 3, 5, 7, 8, 10, 12, 14, 15, 17, 19}, 
+  {0, 1, 3, 5, 6, 8, 10, 12, 13, 15, 17, 18}};
+int scaleIndex = 0;
 
 int Sensor;      // HOLDS PULSE SENSOR DATA FROM ARDUINO
 int IBI;         // HOLDS TIME BETWEN HEARTBEATS FROM ARDUINO
@@ -95,15 +112,21 @@ int numPorts = serialPorts.length;
 boolean refreshPorts = false;
 float wave;
 
-int numbeats = 160;
+int numbeats = 159;
 int   cols = 53;//width/w;
 int  rows = 3;//height/w;
 private float w;
 private float h;
-
+String filename;
 int playRate = 0;
 MidiOutput mymididevice; 
 int mboolval;
+
+//joystick variables
+int  upCount, downCount, leftCount, rightCount, pressedCount;
+boolean pressedLock = true;
+int joystickThreshhold = 4;
+Table table;
 
 void setup() {
   //size(2000, 1200, P2D);
@@ -112,16 +135,23 @@ void setup() {
   padding = height/50;
   h = height/rows-padding*rows;
 
-  melodicScale = dorian;
+  melodicScale = scales[scaleIndex];
 
   for (int i = 0; i < beatsequences.length; i++) {
     beatsequences[i] = new BeatSeq(0, i*h/8+padding, w, h/8, color(int(255/beatsequences.length)*i, 
-      0, 0), h+padding, i, root + melodicScale[i], i);
+      0, 0), h+padding, i, root + scales[int(random(scales.length))][int(random(8))] + randomOctave[int(random(8))], i);
   }
   //smooth();
-  port = new Serial(this, "/dev/cu.usbmodem1441", 115200);
+
+  //port = new Serial(this,  Serial.list()[0], 115200);
+  port = new Serial(this, "/dev/cu.usbmodem1431", 115200);
   noCursor();
   frameRate(120);
+
+  //create a table and file to count users
+  table = new Table();
+  table.addColumn("User Count:");
+  filename = "userCount" +  day() + hour()  + minute() + second() + ".csv";
 
   ///////// Ableton /////////
   // Show available MIDI output devices in console 
@@ -136,10 +166,8 @@ void setup() {
 }
 
 void draw() {
-  println("FR:: "+frameRate);
   background(0);
-  //updatePlayhead();
-  //playhead++;
+  println(joystickPressed); 
 
   if (serialPortFound) {
     // ONLY RUN THE VISUALIZER AFTER THE PORT IS CONNECTED
@@ -166,7 +194,7 @@ void draw() {
   for (int i = 0; i < beatsequences.length; i++) {
     pushMatrix();
     translate(0, h/16);
-    beatsequences[i].play(int(frameCount/tempo) % numbeats);
+    beatsequences[i].play((int(millis()/15/tempo)-tempoOffset) % numbeats);
 
     //beatsequences[i].update(frameCount);
     beatsequences[i].update(playhead, frameCount);
@@ -177,8 +205,6 @@ void draw() {
     } else {
       beatsequences[i].selected = false;
     }
-
-
     popMatrix();
   }
 
@@ -195,7 +221,7 @@ void draw() {
   if (textAlphaIncrease == false && startAlphaCount) {
     alphaCount++;
     if (alphaCount >= 30) {
-      textAlpha-= 10;
+      textAlpha-= 1;
       if (textAlpha <= 0) {
         textAlpha = 0;
         alphaCount = 0;
@@ -204,11 +230,33 @@ void draw() {
     }
   }
 
+  if (textScaleAlphaIncrease) {
+    textScaleAlpha+= 10;
+  }
+
+  if (textScaleAlpha >= 150) {
+    textScaleAlphaIncrease = false;
+  }
+
+  if (textScaleAlphaIncrease == false && startScaleAlphaCount) {
+    scaleAlphaCount++;
+    if (scaleAlphaCount >= 30) {
+      textScaleAlpha-= 1;
+      if (textAlpha <= 0) {
+        textScaleAlpha = 0;
+        scaleAlphaCount = 0;
+        startScaleAlphaCount = false;
+      }
+    }
+  }
+
   stroke(255);
   fill(200, 255, 255, textAlpha);
   textSize(150);
   textAlign(CENTER);
-  text(pulseText1, width/2, height/2+75);
+  text(pulseText1, width/2, height/2-75);
+  fill(200, 255, 255, textScaleAlpha);
+  text(scaleNames[scaleIndex], width/2, 200);
 
   if (int(frameCount/tempo) % numbeats == 0) {
     for (int i = 0; i < beatsequences.length; i++) {
@@ -216,70 +264,100 @@ void draw() {
     }
     playRate++;
   }
-  if (BPM > 45 && BPM < 161) {
-    if (bpmStoreCount > threshhold) {
-      beatsequences[seqIndex].savePulse(BPM);
-      textAlphaIncrease = true;
-      checkPulse();
-      seqIndex++;
-      if (seqIndex > beatsequences.length-1) {
-        seqIndex = 0;
+  if (BPM < 180) {
+    if (BPM > 55 && BPM < 125) {
+      if (bpmStoreCount > threshhold) {
+        beatsequences[seqIndex].savePulse(BPM);
+        textAlphaIncrease = true;
+        startAlphaCount = true;
+
+        checkPulse();
+        seqIndex++;
+        userCount++;
+        saveTable(table, filename);
+
+        if (seqIndex > beatsequences.length-1) {
+          seqIndex = 0;
+          updateScales();
+        }
+        bpmStoreCount = 0;
+      } else {
+        if (bpmStoreCount > threshhold*2) {
+          beatsequences[seqIndex].savePulse(BPM);
+          textAlphaIncrease = true;
+          startAlphaCount = true;
+
+          checkPulse();
+          seqIndex++;
+          if (seqIndex > beatsequences.length-1) {
+            seqIndex = 0;
+          }
+          bpmStoreCount = 0;
+        }
       }
-      bpmStoreCount = 0;
     }
   }
+
   checkJoystick();
 }
 
 void checkJoystick() {
-  if (down) {
+  if (downCount > joystickThreshhold) {
     seqIndex++;
+    downCount = 0;
     if (seqIndex > beatsequences.length-1) {
       seqIndex = 0;
     }
   }
-  if (up) {
+  if (upCount > joystickThreshhold) {
+    println("JSP "+ joystickPressed);
     seqIndex--;
-
+    upCount = 0;
     if (seqIndex < 0) {
       seqIndex = beatsequences.length-1;
     }
   }
-  if (right) {
+
+  if (rightCount > joystickThreshhold) {
     tempo++;
+    tempoOffset-= 1;
+    rightCount = 0;
     if (tempo > 240) tempo = 240;
     for (int i = 0; i < beatsequences.length; i++) {
       beatsequences[i].resetNHP();
     }
   }
-  if (left) {
+  if (leftCount > joystickThreshhold) {
     tempo--;
+    tempoOffset+= 1;
+
+    //index++;
+    leftCount = 0;
     if (tempo < 5) tempo = 5;
     for (int i = 0; i < beatsequences.length; i++) {
       beatsequences[i].resetNHP();
     }
   }
-  //if (!joystickPressed) {
-  //  textAlphaIncrease = true;
-  //  checkPulse();
-  //  startCount1 = false;
-  //  startCount2 = false;
-  //  println("BPM is "+BPM);
-  //  //For testing
-  //  //BPM = int(random(60, 90));
+  println(pressedCount);
 
-  //  beat1 = !beat1;
-  //  startAlphaCount = true;
-  //  //seqIndex++;
-  //  if (seqIndex > beatsequences.length-1) {
-  //    seqIndex = 0;
-  //  }
+  if (pressedCount > joystickThreshhold) {
+    if (pressedLock) pressedCount = 0;
+    if (beatsequences[seqIndex] != null) beatsequences[seqIndex].savePulse(0);
+  } else if (pressedCount > joystickThreshhold*10) {
+    updateScales();
+    if (scaleIndex > scales.length-1) {
+      scaleIndex = 0;
+    }
+    pressedCount = 0;
+    pressedLock = true;
+    blockPress = false;
+  }
 }
 
 
 void keyPressed() {
   if (key == 'q') {
-    textAlphaIncrease = true;
+    //textAlphaIncrease = true;
     checkPulse();
   }
 }
@@ -382,4 +460,18 @@ void updatePlayhead() {
   } 
   if (playhead > numbeats) playhead = 0;
   //}
+}
+
+void updateScales() {
+  textScaleAlphaIncrease = true;
+  startScaleAlphaCount = true;
+  scaleIndex++; 
+  if (scaleIndex > scaleNames.length-1) {
+    scaleIndex = 0;
+  }
+
+
+  for (int i = 0; i < beatsequences.length; i++) {
+    beatsequences[i].updateScale(root + scales[scaleIndex][int(random(8))] + randomOctave[int(random(8))]);
+  }
 }

@@ -11,11 +11,13 @@ class Box {
   int vo;
   boolean noteHasntPlayed;
   int[] melodicNote = new int[12];
-  
+  float selectWidth;
+
   Box(float x_, float y_, float w_, float h_, color c_, int ch, int nt, float n_, int o_, int vo_) {
     x = x_;
     y = y_;
     w = w_;
+    selectWidth = w;
     h = h_;
     c = c_;
     activated = false;
@@ -34,22 +36,22 @@ class Box {
         // send Rhythmic note
         mymididevice.sendNoteOn(channel, int(num), 90);
         // Send Melodic Note
-        mymididevice.sendNoteOn(channel+12, note, 90);
+        mymididevice.sendNoteOn(13, note, 90);
         noteIsOn = true;
         noteHasntPlayed = false;
       }
-    }
+    } 
     if (noteIsOn) {
       onCount++;
       if (onCount > countLength) {
         noteIsOn = false;
         onCount = 0;
         mymididevice.sendNoteOff(channel, int(num), 0);
-                mymididevice.sendNoteOff(channel+12, note, 0);
-
+        mymididevice.sendNoteOff(13, note, 0);
       }
     }
     w = (noise((frameCount+vo*10+o*25)*.004)*100);
+    selectWidth = w;
   }
 
   void display() {
@@ -57,23 +59,20 @@ class Box {
     noStroke();
     ellipseMode(CENTER);
     if (activated && !playing) {
-            fill(255-o*25, 0, 0);
-
+      fill(255-o*20, 0, 0);
     } else if (playing || playing && activated) {
       fill(255);
     } else {
-            fill(0);
-
+      fill(0);
     }
-    //if (activated) {
-    //  fill(255-o*25, 230-o*25, 0);
-    //} 
-
-    ellipse(x+w/2, y+w/2, w-2, w-2);
+    ellipse(x+w/2, y+w/2, w, w);
     if (selected) {
-      //strokeWeight(3);
-      fill(255-o*20, 200-o*20, 210-o*20, 170);
-      ellipse(x+w/2, y+w/2, w-2, w-2);
+      int alphaChange = int(map(Sensor, 300, 700, 0, 60));
+      fill(255-o*20, 200-o*20, 210-o*20, 170-alphaChange);
+      if(Sensor > 300) selectWidth += map(Sensor, 300, 700, 0, 20); 
+      ellipse(x+w/2, y+w/2, selectWidth, selectWidth);
     }
+        //ellipse(x+w/2, y+w/2, w, w);
+
   }
 }

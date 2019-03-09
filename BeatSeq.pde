@@ -4,8 +4,8 @@ class BeatSeq {
   float x, y, w, h;
   color c;
   int channel;
-  int rotate = 0;
-  int[] storedRhythm = new int[160];
+  int rotate = -1;
+  int[] storedRhythm = new int[numbeats];
 
   int offset;
   boolean selected;
@@ -27,12 +27,8 @@ class BeatSeq {
     for (int i = 0; i < cols; i++) {
       for (int j = 0; j < rows; j++) {
         fill(0, 0, 244);
-        box[i][j] = new Box(i*w+x, j*h+j*offset+y, w, h, c, ch, nt, j, offset, i);
+        box[i][j] = new Box(i*w+x, j*h+j*offset+y/1.5, w, h, c, ch, nt, j, offset, i);
       }
-    }
-
-    for (int i = 0; i < box.length; i++) {
-      //box[i] = new Box();
     }
   }
 
@@ -58,11 +54,6 @@ class BeatSeq {
 
         box[i][j].update();
 
-        //if (playhead == index) {
-        //  box[i][j].playing = true;
-        //} else {
-        //  box[i][j].playing = false;
-        //}
         if (selected) {
           box[i][j].selected = true;
         } else {
@@ -72,7 +63,14 @@ class BeatSeq {
     }
   }
 
-
+  void updateScale(int newNote){
+    for (int i = 0; i < cols; i++) {
+      for (int j = 0; j < rows; j++) {   
+        box[i][j].note = newNote;
+      }
+    }
+  }
+  
   void play(int fc) {
     for (int i = 0; i < cols; i++) {
       for (int j = 0; j < rows; j++) {
@@ -97,15 +95,15 @@ class BeatSeq {
   }
 
   void savePulse(int bpm) {
-    euclid(160, bpm, rotate);
+    euclid(numbeats, bpm, rotate);
   }
 
   //calculate a euclidean rhythm
   void euclid(int steps, int pulses, int rotate) {
     print("Create new euclidean rhythm \n");
     print("Steps", steps, "Pulses", pulses, "Rotate", rotate, "\n");
-    rotate += 1;
-    rotate %= steps;
+    //rotate += 1;
+    //rotate %= steps;
     clearArray(); //empty the array
     int bucket = 0;
 
@@ -119,7 +117,7 @@ class BeatSeq {
         storedRhythm = append( storedRhythm, 0);
       }
     }
-
+rotateSeq( steps, rotate);
     //rotate
     //if (rotate > 0) rotateSeq( steps, rotate);
   }
@@ -138,7 +136,6 @@ class BeatSeq {
     while (storedRhythm.length > 0) {
       storedRhythm = shorten(storedRhythm);
     }
-    println("storedR : " + storedRhythm.length);
   }
 
   //void clearArray() {
