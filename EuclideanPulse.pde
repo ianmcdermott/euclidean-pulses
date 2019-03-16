@@ -18,7 +18,7 @@ float angleRes = .0007;
 int playhead = 0;
 int bpmStoreCount = 0;
 int previousBPM;
-int threshhold = 5;
+int threshhold = 15;
 boolean blockPress = false;
 BeatSeq[] beatsequences = new BeatSeq[12];
 float tempo = 20;
@@ -144,7 +144,7 @@ void setup() {
   //smooth();
 
   //port = new Serial(this,  Serial.list()[0], 115200);
-  port = new Serial(this, "/dev/cu.usbmodem1431", 115200);
+  port = new Serial(this, "/dev/cu.usbmodem1421", 115200);
   noCursor();
   frameRate(120);
 
@@ -264,6 +264,7 @@ void draw() {
     }
     playRate++;
   }
+  println(bpmStoreCount);
   if (BPM < 180) {
     if (BPM > 55 && BPM < 125) {
       if (bpmStoreCount > threshhold) {

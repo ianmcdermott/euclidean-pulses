@@ -34,9 +34,10 @@ class Box {
     if (noteHasntPlayed) {
       if (activated && playing) {
         // send Rhythmic note
-        mymididevice.sendNoteOn(channel, int(num), 90);
+        mymididevice.sendNoteOn(channel, channel, 127);
+        println(channel);
         // Send Melodic Note
-        mymididevice.sendNoteOn(13, note, 90);
+        mymididevice.sendNoteOn(13, note, int(random(70, 127)));
         noteIsOn = true;
         noteHasntPlayed = false;
       }
@@ -46,7 +47,7 @@ class Box {
       if (onCount > countLength) {
         noteIsOn = false;
         onCount = 0;
-        mymididevice.sendNoteOff(channel, int(num), 0);
+        mymididevice.sendNoteOff(channel, channel, 0);
         mymididevice.sendNoteOff(13, note, 0);
       }
     }
