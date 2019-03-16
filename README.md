@@ -1,1 +1,1 @@
-# bugPulse
+# Euclidean Pulses
